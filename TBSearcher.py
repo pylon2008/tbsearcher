@@ -1,5 +1,6 @@
 # coding=GBK
-import logging, datetime, socket, traceback
+import logging, datetime, socket, traceback, os
+from win32com.shell import shell, shellcon
 from xpylon.xethernet.IEProxy import *
 from xpylon.xethernet.IEExplorer import *
 from xpylon.xethernet.NetManager import *
@@ -11,9 +12,13 @@ def initLogging():
     strTime = str(curTime)
     logging.debug("===============================================Begin Log===============================================")
     logging.debug( socket.gethostname() )
+ 
+def test_del_cookie():
+    clearIECookie()
 
 def search_baobei():
     logging.debug('do nothing')
+    test_del_cookie()
 
 def tbsearch_2897106_dowork():
     initLogging()
@@ -59,6 +64,7 @@ def tbsearch_2897106_dowork():
             traceStr = traceback.format_exc()
             logging.error(traceStr)
             closeAllRunningIE()
+        break
 
         # change IP
         try:
@@ -69,9 +75,6 @@ def tbsearch_2897106_dowork():
 
         # next view
         batIdx += 1
-
-        break
-
 
 
 

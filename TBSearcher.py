@@ -59,8 +59,9 @@ class BaobeiSearher(object):
         time.sleep(10)
 
     def getCurPageSearchItem(self):
-        nextPageNode = self.getNextPageNode()
-        nextPageNode.scrollIntoView(True)
+        self.refreshOutAllItem()
+##        nextPageNode = self.getNextPageNode()
+##        nextPageNode.scrollIntoView(True)
         while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
             self.searchPageIE.stop()
             time.sleep(0.1)
@@ -78,12 +79,26 @@ class BaobeiSearher(object):
         for item in nodesItem:
             print "item.nodeItems.length: ", item.childNodes.length
 
+    def refreshOutAllItem(self):
+        self.searchPageIE.stayInSubPage(10)
+##        timeBeg = datetime.datetime.now()
+##        while self.searchPageIE.getWindow().status != u"完成":
+##            print "status: ", self.searchPageIE.getWindow().status
+##            self.searchPageIE.stayInSubPage(2)
+##            timeEnd = datetime.datetime.now()
+##            deltaTime = (timeEnd-timeBeg).seconds
+##            if (deltaTime >= 60):
+##                raise ValueError, u"refreshOutAllItem too long time"
+        
+        
+
     def getNextPageNode(self):
         body = self.searchPageIE.getBody()
         nodesA = getSubNodesByTag(body, u"a")
         nodesNextPage = []
         for node in nodesA:
-            if node.className==u"page-next":
+            if node.className==u"page-next" and \
+               node.getAttribute(u"title")==u"下一页":
                 nodesNextPage.append(node)
         if len(nodesNextPage) != 1:
             strDbg = u"num of next page button: " + str( len(nodesNextPage) )

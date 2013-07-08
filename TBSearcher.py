@@ -11,6 +11,164 @@ import urllib
 from bs4 import BeautifulSoup
 
 #IE_TIME_OUT_NEW_PAGE = 20
+
+
+###################################################################################
+class TaobaoBaobeiViewer(object):
+    def __init__(self, mainIE):
+        self.mainIE = mainIE
+        self.subIESet = []
+        self.imgHrefNodes = []
+        self.subNodes = []
+        self.timeBegOp = None                   # 开始操作宝贝的起点时间，从开始滚动开始
+
+    def getRandomSubIE(self):
+        numSubIE = random.randint(NUM_SUB_PAGE_MIN, NUM_SUB_PAGE_MAX)
+        numImgHrefNodes = len(self.imgHrefNodes)
+        if numSubIE > numImgHrefNodes:
+            numSubIE = numImgHrefNodes
+
+        allIdxs = []
+        for i in range(numSubIE):
+            xx = random.randint(0, numImgHrefNodes-1)
+            while True:
+                if xx in allIdxs:
+                    xx = random.randint(0, numImgHrefNodes-1)
+                else:
+                    allIdxs.append(xx)
+                    break
+                
+        for i in range(len(allIdxs)):
+            self.subNodes.append( self.imgHrefNodes[allIdxs[i]] )
+
+    def getImgHrefNodes(self):
+        body = self.mainIE.getBody()
+        nodesImg = getSubNodesByTag(body, "img")
+        for node in nodesImg:
+            nodeParent = node.parentElement
+            if nodeParent!=None:
+                if nodeParent.tagName==u"a" or nodeParent.tagName==u"A":
+                    href = nodeParent.getAttribute("href")
+                    if type(href)==unicode and href!=u"":
+                        if u"detail" in href:
+                            self.imgHrefNodes.append(nodeParent)
+
+    def getNumSubIE(self):
+        return len(self.subNodes)
+
+    def getTimeBegOp(self):
+        return self.timeBegOp
+
+    def createNewSubIE(self, subIdx):
+        subNode = self.subNodes[subIdx]
+        url = subNode.getAttribute("href")
+        ie = IEExplorer()
+        ie.openURL(url)
+        ie.setVisible(1)
+        self.subIESet.append(ie)
+
+    def getMainIE(self):
+        return self.mainIE
+    
+    def getNewSubIE(self, subIdx):
+        return self.subIESet[subIdx]
+
+    def baobeiSrcollBeg(self):
+        self.timeBegOp = datetime.datetime.now()
+        mainIE = self.getMainIE()
+        while mainIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+            mainIE.stop()
+            time.sleep(0.1)
+        mainIE.waitReadyState(IE_TIME_OUT_NEW_PAGE)
+        mainIE.setForeground()
+        while mainIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+            mainIE.stop()
+            time.sleep(0.1)
+        isReady = mainIE.waitReadyState(IE_TIME_OUT_NEW_PAGE)
+        time.sleep(1)
+        timeOut = random.randint(3, 5)
+        mainIE.stayInSubPage(timeOut)
+
+    def openCurBaobei(self):
+        logging.debug("openCurBaobei")
+        self.getImgHrefNodes()
+        self.getRandomSubIE()
+        
+        numSubIE = self.getNumSubIE()
+        for subIdx in range(numSubIE):
+            debugInfo = "subIdx: " + str(subIdx) + ", url: " + self.subNodes[subIdx].getAttribute("href")
+            logging.debug(debugInfo)
+            debugInfo = "come back to mainIE waitBusy before setForeground: "
+            logging.debug(debugInfo)
+            # 回宝贝界面
+            while self.mainIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+                self.mainIE.stop()
+                time.sleep(0.1)
+            self.mainIE.waitReadyState(IE_TIME_OUT_NEW_PAGE)
+            self.mainIE.setForeground()
+            time.sleep(1)
+            self.mainIE.resizeMax()
+            time.sleep(1)
+            debugInfo = "come back to mainIE waitBusy after setForeground: "
+            logging.debug(debugInfo)
+            while self.mainIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+                self.mainIE.stop()
+                time.sleep(0.1)
+            self.mainIE.waitReadyState(IE_TIME_OUT_NEW_PAGE)
+
+            # 打开子页面
+            logging.debug("self.mainIE.scrollToNode")
+            subNode = self.subNodes[subIdx]
+            self.mainIE.scrollToNode(subNode)
+            subNode.focus()
+            logging.debug("self.createNewSubIE")
+            self.createNewSubIE(subIdx)
+
+            # 滚动子页面
+            logging.debug("subIE.stayInSubPage")
+            subIE = self.getNewSubIE(subIdx)
+            while subIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+                subIE.stop()
+                time.sleep(0.1)
+            isReady = subIE.waitReadyState(IE_TIME_OUT_NEW_PAGE)
+            timeOut = random.randint(3, 5)
+            subIE.stayInSubPage(timeOut)
+
+            if subIdx != numSubIE-1:
+                time.sleep(2)           
+
+
+###################################################################################
+class SearchRecord(object):
+    def __init__(self, node):
+        self.rcdNode = node
+        self.summaryStr = None
+        self.summaryNode = None
+        self.extractSummary()
+
+    def extractSummary(self):
+        self.summary = u"Not extract the summary"
+        try:
+            self.summaryNode = self.extractSummaryNode()
+            self.summaryStr = self.summaryNode.title
+            self.summaryStr = str2unicode(self.summary)
+        except:
+            traceStr = traceback.format_exc()
+            logging.error(traceStr)
+
+    def extractSummaryNode(self):
+        nodeH3 = getSubNodesByTag(self.rcdNode, u"h3")
+        if len(nodeH3) != 1 or nodeH3[0].className!=u"summary":
+            raise ValueError, u"find the summary node error"
+        return nodeH3[0].childNodes[0]
+
+    def getSummaryNode(self):
+        return self.summaryNode
+        
+    def getSummaryStr(self):
+        return self.summaryStr
+
+
 ###################################################################################
 class BaobeiSearher(object):
     def __init__(self, searchKey, targetUrl):
@@ -19,6 +177,7 @@ class BaobeiSearher(object):
         self.targetTitle = None
         self.searchPageIE = None
         self.curPageIdx = 0
+        self.curPageInnerIdx = -1
         self.allSearchPages = []
 
     def doSearch(self):
@@ -49,48 +208,68 @@ class BaobeiSearher(object):
         #find the target
         self.doFindTargetBaobei()
         
-#http://s.taobao.com/search?q=%C5%ED%D3%A6%C1%C1&app=detail
-#http://s.taobao.com/search?q=男士短袖衬衫&suggest=0_5&wq=男士&suggest_query=男士&source=suggest&initiative_id=tbindexz_20130706&spm=1.1000386.5803581.d4908513&sourceId=tb.index&search_type=item&commend=all
-
     def doFindTargetBaobei(self):
         while True:
             self.getCurPageSearchItem()
-            break
-        time.sleep(10)
+            if self.isTargetInThisPage()==True:
+                break
+            else:
+                self.curPageIdx += 1
+                nextPageNode = self.getNextPageNode()
+                self.searchPageIE.scrollToNode(nextPageNode)
+                nextPageNode.click()
+                nextPageNode.focus()
+
+        print "self.curPageIdx: ", self.curPageIdx
+        print "self.curPageInnerIdx: ", self.curPageInnerIdx
+        # go to the targe baobei page
+        targetNode = self.allSearchPages[self.curPageIdx][self.curPageInnerIdx]
+        rcd = SearchRecord(targetNode)
+        summaryNode = rcd.getSummaryNode()
+        self.searchPageIE.scrollToNode(summaryNode)
+        summaryNode.click()
+        #summaryNode.focus()
+        time.sleep(20)
+
+    def isTargetInThisPage(self):
+        return self.curPageInnerIdx != -1
 
     def getCurPageSearchItem(self):
         self.refreshOutAllItem()
-##        nextPageNode = self.getNextPageNode()
-##        nextPageNode.scrollIntoView(True)
         while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
             self.searchPageIE.stop()
             time.sleep(0.1)
-        
+
+        # get all item node
         strDbgInfo = u"Page:" + str(self.curPageIdx) + u", locationURL: " + self.searchPageIE.locationURL()
         logging.debug(strDbgInfo)
         body = self.searchPageIE.getBody()
         nodesDiv = getSubNodesByTag(body, u"div")
         nodesItem = []
         for node in nodesDiv:
-            if node.className == u"item-box":
+            if node.className == u"item-box" and node.childNodes.length>=6:
                 nodesItem.append(node)
         strDbgInfo = u"cur page item count: " + str(len(nodesItem))
         logging.debug(strDbgInfo)
-        for item in nodesItem:
-            print "item.nodeItems.length: ", item.childNodes.length
 
+        # get the target node
+        self.allSearchPages.append(nodesItem)
+        for i in range(len(nodesItem)):
+            node = nodesItem[i]
+            try:
+                rcd = SearchRecord(node)
+                if self.isRecordTarget(rcd)==True:
+                    self.curPageInnerIdx = i
+            except:
+                traceStr = traceback.format_exc()
+                logging.error(traceStr)
+
+    def isRecordTarget(self, rcd):
+        return True
+        return rcd.getSummaryStr() in self.targetTitle
+    
     def refreshOutAllItem(self):
         self.searchPageIE.stayInSubPage(10)
-##        timeBeg = datetime.datetime.now()
-##        while self.searchPageIE.getWindow().status != u"完成":
-##            print "status: ", self.searchPageIE.getWindow().status
-##            self.searchPageIE.stayInSubPage(2)
-##            timeEnd = datetime.datetime.now()
-##            deltaTime = (timeEnd-timeBeg).seconds
-##            if (deltaTime >= 60):
-##                raise ValueError, u"refreshOutAllItem too long time"
-        
-        
 
     def getNextPageNode(self):
         body = self.searchPageIE.getBody()
@@ -110,6 +289,7 @@ class BaobeiSearher(object):
         content = urllib.urlopen(self.targetUrl).read()
         soup = BeautifulSoup(content)
         self.targetTitle = soup.find(u'title')
+        self.targetTitle = str2unicode(str(self.targetTitle))
         
     def getSearchUnputNode(self):
         body = self.searchPageIE.getBody()

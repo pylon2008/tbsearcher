@@ -7,22 +7,28 @@ from xpylon.xethernet.IEExplorer import *
 from xpylon.xethernet.NetManager import *
 from xpylon.xutil.Activation import *
 from xpylon.xutil.xstring import *
+import urllib
+from bs4 import BeautifulSoup
 
 #IE_TIME_OUT_NEW_PAGE = 20
 ###################################################################################
 class BaobeiSearher(object):
-    def __init__(self, searchKey):
+    def __init__(self, searchKey, targetUrl):
         self.searchKey = searchKey
-        self.searchPage = None
+        self.targetUrl = targetUrl
+        self.targetTitle = None
+        self.searchPageIE = None
+        self.curPageIdx = 0
+        self.allSearchPages = []
 
     def doSearch(self):
         # open taobao
         url = u"http://www.taobao.com/"
-        self.searchPage = IEExplorer()
-        self.searchPage.openURL(url)
-        self.searchPage.setVisible(1)
-        while self.searchPage.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
-            self.searchPage.stop()
+        self.searchPageIE = IEExplorer()
+        self.searchPageIE.openURL(url)
+        self.searchPageIE.setVisible(1)
+        while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+            self.searchPageIE.stop()
             time.sleep(0.1)
 
         #input search key
@@ -35,14 +41,63 @@ class BaobeiSearher(object):
         nodeSearchButton = self.getSearchButtonNode()
         nodeSearchButton.click()
         nodeSearchButton.focus()
-        while self.searchPage.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
-            self.searchPage.stop()
+        self.getTargetUrlInfo()
+        while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+            self.searchPageIE.stop()
             time.sleep(0.1)
+
+        #find the target
+        self.doFindTargetBaobei()
+        
 #http://s.taobao.com/search?q=%C5%ED%D3%A6%C1%C1&app=detail
 #http://s.taobao.com/search?q=ÄÐÊ¿¶ÌÐä³ÄÉÀ&suggest=0_5&wq=ÄÐÊ¿&suggest_query=ÄÐÊ¿&source=suggest&initiative_id=tbindexz_20130706&spm=1.1000386.5803581.d4908513&sourceId=tb.index&search_type=item&commend=all
 
+    def doFindTargetBaobei(self):
+        while True:
+            self.getCurPageSearchItem()
+            break
+        time.sleep(10)
+
+    def getCurPageSearchItem(self):
+        nextPageNode = self.getNextPageNode()
+        nextPageNode.scrollIntoView(True)
+        while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+            self.searchPageIE.stop()
+            time.sleep(0.1)
+        
+        strDbgInfo = u"Page:" + str(self.curPageIdx) + u", locationURL: " + self.searchPageIE.locationURL()
+        logging.debug(strDbgInfo)
+        body = self.searchPageIE.getBody()
+        nodesDiv = getSubNodesByTag(body, u"div")
+        nodesItem = []
+        for node in nodesDiv:
+            if node.className == u"item-box":
+                nodesItem.append(node)
+        strDbgInfo = u"cur page item count: " + str(len(nodesItem))
+        logging.debug(strDbgInfo)
+        for item in nodesItem:
+            print "item.nodeItems.length: ", item.childNodes.length
+
+    def getNextPageNode(self):
+        body = self.searchPageIE.getBody()
+        nodesA = getSubNodesByTag(body, u"a")
+        nodesNextPage = []
+        for node in nodesA:
+            if node.className==u"page-next":
+                nodesNextPage.append(node)
+        if len(nodesNextPage) != 1:
+            strDbg = u"num of next page button: " + str( len(nodesNextPage) )
+            logging.error(strDbg)
+            raise ValueError, strDbg
+        return nodesNextPage[0]
+        
+    def getTargetUrlInfo(self):
+        content = urllib.urlopen(self.targetUrl).read()
+        soup = BeautifulSoup(content)
+        self.targetTitle = soup.find(u'title')
+        
     def getSearchUnputNode(self):
-        body = self.searchPage.getBody()
+        body = self.searchPageIE.getBody()
         nodesInput = getSubNodesByTag(body, u"input")
         nodeSearchInput = getNodeByAttr(nodesInput, u"id", u"q")
         if nodeSearchInput == None:
@@ -50,18 +105,18 @@ class BaobeiSearher(object):
         return nodeSearchInput
 
     def getSearchButtonNode(self):
-        body = self.searchPage.getBody()
+        body = self.searchPageIE.getBody()
         nodesInput = getSubNodesByTag(body, u"button")
         nodeSearchButton = None
         for node in nodesInput:
             value = u"submit"
             try: 
-                if node.getAttribute(u"type"))==u"submit":
+                if node.getAttribute(u"type")==u"submit":
                     value = None
-                    value = node.getAttribute(u"tabIndex"))
+                    value = node.getAttribute(u"tabIndex")
             except:
-                pass
-            if value==None:
+                a = 0
+            if value==0:
                 nodeSearchButton = node
                 break
 
@@ -144,7 +199,7 @@ class TaobaoSearcher(object):
         return numUnvisit > 0
 
     def doSearch(self):
-        self.searcher = BaobeiSearher(self.randomKey)
+        self.searcher = BaobeiSearher(self.randomKey, self.baobeiSet[self.baobeiIndex][2])
         self.searcher.doSearch()
 
     def getBaobei(self, visitIdx):
@@ -222,6 +277,16 @@ def initLogging():
     strTime = str(curTime)
     logging.debug("===============================================Begin Log===============================================")
     logging.debug( socket.gethostname() )
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler();
+    console.setLevel(logging.DEBUG);    
+    # set a format which is simpler for console use
+    #formatter = logging.Formatter('LINE %(lineno)-4d : %(levelname)-8s %(message)s')
+    formatter = logging.Formatter('%(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter);
+    logging.getLogger('').addHandler(console); 
  
 def search_baobei():
     searcher = TaobaoSearcher()
@@ -229,7 +294,7 @@ def search_baobei():
     searcher.writeUrlConfig()
     
 def tbsearch_2897106_dowork():
-    #initLogging()
+    initLogging()
     netManger = None
     
     # init net manager

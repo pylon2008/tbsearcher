@@ -11,6 +11,8 @@ import urllib
 from bs4 import BeautifulSoup
 
 #IE_TIME_OUT_NEW_PAGE = 20
+NUM_SUB_PAGE_MIN = 2
+NUM_SUB_PAGE_MAX = 4
 
 
 ###################################################################################
@@ -175,6 +177,7 @@ class BaobeiSearher(object):
         self.searchKey = searchKey
         self.targetUrl = targetUrl
         self.targetTitle = None
+        self.targetViewer = None
         self.searchPageIE = None
         self.curPageIdx = 0
         self.curPageInnerIdx = -1
@@ -227,9 +230,19 @@ class BaobeiSearher(object):
         rcd = SearchRecord(targetNode)
         summaryNode = rcd.getSummaryNode()
         self.searchPageIE.scrollToNode(summaryNode)
-        summaryNode.click()
-        #summaryNode.focus()
-        time.sleep(20)
+        summaryNode.focus()
+        url = summaryNode.getAttribute(u"href")
+        baobeiIE = IEExplorer()
+        baobeiIE.openURL(url)
+        baobeiIE.setVisible(1)
+##        summaryNode.focus()
+##        summaryNode.click()
+##        baobeiIE = self.searchPageIE.clickNode(summaryNode)
+        self.targetViewer = TaobaoBaobeiViewer(baobeiIE)
+        self.targetViewer.baobeiSrcollBeg()
+        self.targetViewer.openCurBaobei()
+
+        time.sleep(15)
 
     def isTargetInThisPage(self):
         return self.curPageInnerIdx != -1

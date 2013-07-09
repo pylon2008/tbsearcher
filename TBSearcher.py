@@ -99,6 +99,8 @@ class TaobaoBaobeiViewer(object):
         self.getRandomSubIE()
         
         numSubIE = self.getNumSubIE()
+        dbgInfo = u"numSubIE: " + str2unicode(str(numSubIE))
+        logging.debug(dbgInfo)
         for subIdx in range(numSubIE):
             debugInfo = "subIdx: " + str(subIdx) + ", url: " + self.subNodes[subIdx].getAttribute("href")
             logging.debug(debugInfo)
@@ -151,11 +153,11 @@ class SearchRecord(object):
         self.extractSummary()
 
     def extractSummary(self):
-        self.summary = u"Not extract the summary"
+        self.summaryStr = u"Not extract the summary"
         try:
             self.summaryNode = self.extractSummaryNode()
             self.summaryStr = self.summaryNode.title
-            self.summaryStr = str2unicode(self.summary)
+            self.summaryStr = str2unicode(self.summaryStr)
         except:
             traceStr = traceback.format_exc()
             logging.error(traceStr)
@@ -200,6 +202,7 @@ class BaobeiSearher(object):
         nodeSearchInput = self.getSearchUnputNode()
         nodeSearchInput.click()
         nodeSearchInput.focus()
+        logging.debug(self.searchKey)
         enumHumanInput(nodeSearchInput, self.searchKey)
 
         #search
@@ -340,6 +343,8 @@ class BaobeiSearher(object):
             node = nodesItem[i]
             try:
                 rcd = SearchRecord(node)
+                dbgInfo = str2unicode(str(i)) + u":" + rcd.getSummaryStr()
+                logging.debug( dbgInfo )
                 if self.isRecordTarget(rcd)==True:
                     self.curPageInnerIdx = i
             except:
@@ -347,7 +352,12 @@ class BaobeiSearher(object):
                 logging.error(traceStr)
 
     def isRecordTarget(self, rcd):
-        return rcd.getSummaryStr() in self.targetTitle
+        if rcd.getSummaryStr() in self.targetTitle:
+            titleBeg = u"<title>"
+            titleEnd = u"-ÌÔ±¦Íø</title>"
+            beg = titleBeg+rcd.getSummaryStr()
+            return beg in self.targetTitle
+        return False
     
     def refreshOutAllItem(self):
         self.searchPageIE.stayInSubPage(10)
@@ -520,29 +530,7 @@ class TaobaoSearcher(object):
             logging.error("SearchConfig_backup.xls write error!")
             traceStr = traceback.format_exc()
             logging.error(traceStr)
-       
-##    def closeAllIE(self):
-##        numVisitBaobei = self.numVisit()
-##        for mainIdx in range(numVisitBaobei):
-##            baobei = self.getBaobei(mainIdx)
-##            debugInfo = "mainIdx: "+ str(mainIdx) + ", type(baobei): " + str(type(baobei)) + ", baobei.getNumSubIE(): " + str(baobei.getNumSubIE())
-##            logging.debug(debugInfo)
-##            for subIdx in range(baobei.getNumSubIE()):
-##                subIE = baobei.getNewSubIE(subIdx)
-##                debugInfo = "subIdx: "+str(subIdx)+ ", type(subIE): "+ str(type(subIE))
-##                logging.debug(debugInfo)
-##                while subIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
-##                    subIE.stop()
-##                    time.sleep(0.1)
-##                subIE.setForeground()
-##                time.sleep(IE_INTERVAL_TIME_CLOSE)
-##                subIE.quit()
-##            while baobei.getMainIE().waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
-##                baobei.getMainIE().stop()
-##                time.sleep(0.1)
-##            baobei.getMainIE().setForeground()
-##            time.sleep(IE_INTERVAL_TIME_CLOSE)
-##            baobei.getMainIE().quit()
+
 
 ###################################################################################
 
@@ -569,6 +557,10 @@ def search_baobei():
     searcher.doSearch()
     searcher.writeUrlConfig()
     
+    # write URL config
+    searcher.writeUrlConfig()
+    return searcher.hasUnvisit()
+    
 def tbsearch_2897106_dowork():
     initLogging()
     netManger = None
@@ -593,20 +585,17 @@ def tbsearch_2897106_dowork():
         logging.debug("\r\n\r\n")
         logging.debug("batIdx: %d", batIdx)
 
-##        if isOutOfData()==True:
-##            logging.error("isOutOfData" + str(datetime.datetime.now()))
-##            time.sleep(24*60*60)
-##        if isActive(u"tbsearch")==False:
-##            logging.error("isActive" + str(datetime.datetime.now()))
-##            time.sleep(24*60*60)
+        if isActive(u"tbsearch")==False:
+            logging.error("isActive" + str(datetime.datetime.now()))
+            time.sleep(24*60*60)
 
         #init ev
-##        try:
-##            os.startfile("C:\\Program Files\\Internet Explorer\\iexplore.exe")
-##        except:
-##            logging.error("¿Õ°×Ò³´ò¿ªÒì³£")
-##            traceStr = traceback.format_exc()
-##            logging.error(traceStr)
+        try:
+            os.startfile("C:\\Program Files\\Internet Explorer\\iexplore.exe")
+        except:
+            logging.error("¿Õ°×Ò³´ò¿ªÒì³£")
+            traceStr = traceback.format_exc()
+            logging.error(traceStr)
 
         # view baobei
         try:
@@ -616,7 +605,6 @@ def tbsearch_2897106_dowork():
             traceStr = traceback.format_exc()
             logging.error(traceStr)
             closeAllRunningIE()
-        break
 
         # clear IE cookie
         try:

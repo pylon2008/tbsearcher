@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 #IE_TIME_OUT_NEW_PAGE = 20
 NUM_SUB_PAGE_MIN = 2
 NUM_SUB_PAGE_MAX = 4
+TIME_BAOBEI_VIEW_MIN = 280
+TIME_BAOBEI_VIEW_MAX = 400
 
 
 ###################################################################################
@@ -182,6 +184,7 @@ class BaobeiSearher(object):
         self.curPageIdx = 0
         self.curPageInnerIdx = -1
         self.allSearchPages = []
+        self.randomBaobei = []
 
     def doSearch(self):
         # open taobao
@@ -212,8 +215,10 @@ class BaobeiSearher(object):
         self.doFindTargetBaobei()
         
     def doFindTargetBaobei(self):
+        # page next loop
         while True:
             self.getCurPageSearchItem()
+            self.procViewRandomBaobei()
             if self.isTargetInThisPage()==True:
                 break
             else:
@@ -223,8 +228,8 @@ class BaobeiSearher(object):
                 nextPageNode.click()
                 nextPageNode.focus()
 
-        print "self.curPageIdx: ", self.curPageIdx
-        print "self.curPageInnerIdx: ", self.curPageInnerIdx
+        dbgInfo = u"randomBaobei: " + str2unicode( str(self.randomBaobei) )
+        logging.debug(dbgInfo)
         # go to the targe baobei page
         targetNode = self.allSearchPages[self.curPageIdx][self.curPageInnerIdx]
         rcd = SearchRecord(targetNode)
@@ -235,19 +240,84 @@ class BaobeiSearher(object):
         baobeiIE = IEExplorer()
         baobeiIE.openURL(url)
         baobeiIE.setVisible(1)
-##        summaryNode.focus()
-##        summaryNode.click()
-##        baobeiIE = self.searchPageIE.clickNode(summaryNode)
         self.targetViewer = TaobaoBaobeiViewer(baobeiIE)
         self.targetViewer.baobeiSrcollBeg()
         self.targetViewer.openCurBaobei()
 
-        time.sleep(15)
+        # stay in baobei page
+        timeTotal = random.randint(TIME_BAOBEI_VIEW_MIN, TIME_BAOBEI_VIEW_MAX)
+        timeBeg = self.targetViewer.getTimeBegOp()
+        timeNow = datetime.datetime.now()
+        timePass = (timeNow-timeBeg).seconds
+        timeSleep = timeTotal - timePass
+        if timeSleep <= 0:
+            timeSleep = 10
+        dbgInfo = u"stay in baobei page time: " + str2unicode(str(timeSleep))
+        logging.debug(dbgInfo)
+        time.sleep(timeSleep)
 
+    def viewRandomBaobei(self, randomIdx):
+        randomNode = self.allSearchPages[self.curPageIdx][randomIdx]
+        rcd = SearchRecord(randomNode)
+        summaryNode = rcd.getSummaryNode()
+        self.searchPageIE.scrollToNode(summaryNode)
+        summaryNode.focus()
+        url = summaryNode.getAttribute(u"href")
+        baobeiIE = IEExplorer()
+        baobeiIE.openURL(url)
+        baobeiIE.setVisible(1)
+        isReady = baobeiIE.waitReadyState(IE_TIME_OUT_NEW_PAGE)
+        timeOut = random.randint(3, 5)
+        baobeiIE.stayInSubPage(timeOut)
+
+        # set the search page into top
+        while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+            self.targetViewer.getMainIE().stop()
+            time.sleep(0.1)
+        self.searchPageIE.waitReadyState(IE_TIME_OUT_NEW_PAGE)
+        self.searchPageIE.setForeground()
+        time.sleep(1)
+        #self.searchPageIE.resizeMax()
+        time.sleep(1)
+   
+    def procViewRandomBaobei(self):
+        if self.isTargetInThisPage()==True:
+            targetBaobei = (self.curPageIdx, self.curPageInnerIdx)
+            self.randomBaobei.append(targetBaobei)
+        if len(self.allSearchPages[-1]) < 3:
+            return
+        
+        if self.curPageIdx == 0:
+            # page 0, we have a random baobei view
+            randomIdx = None
+            while True:
+                innerIdx = random.randint(0, len(self.allSearchPages[-1])-1)
+                toupleIdx = (self.curPageIdx, innerIdx)
+                if toupleIdx not in self.randomBaobei:
+                    randomIdx = innerIdx
+                    self.randomBaobei.append(toupleIdx)
+                    break
+            self.viewRandomBaobei(randomIdx)
+
+        if self.isTargetInThisPage()==True:
+            # page 0, we have a random baobei view
+            randomIdx = None
+            while True:
+                innerIdx = random.randint(0, len(self.allSearchPages[-1])-1)
+                toupleIdx = (self.curPageIdx, innerIdx)
+                if toupleIdx not in self.randomBaobei:
+                    randomIdx = innerIdx
+                    self.randomBaobei.append(toupleIdx)
+                    break
+            self.viewRandomBaobei(randomIdx)
+                
+        
     def isTargetInThisPage(self):
         return self.curPageInnerIdx != -1
 
     def getCurPageSearchItem(self):
+        nodesItem = []
+        self.allSearchPages.append(nodesItem)
         self.refreshOutAllItem()
         while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
             self.searchPageIE.stop()
@@ -258,7 +328,6 @@ class BaobeiSearher(object):
         logging.debug(strDbgInfo)
         body = self.searchPageIE.getBody()
         nodesDiv = getSubNodesByTag(body, u"div")
-        nodesItem = []
         for node in nodesDiv:
             if node.className == u"item-box" and node.childNodes.length>=6:
                 nodesItem.append(node)
@@ -266,7 +335,7 @@ class BaobeiSearher(object):
         logging.debug(strDbgInfo)
 
         # get the target node
-        self.allSearchPages.append(nodesItem)
+        self.allSearchPages[self.curPageIdx] = nodesItem
         for i in range(len(nodesItem)):
             node = nodesItem[i]
             try:
@@ -278,7 +347,6 @@ class BaobeiSearher(object):
                 logging.error(traceStr)
 
     def isRecordTarget(self, rcd):
-        return True
         return rcd.getSummaryStr() in self.targetTitle
     
     def refreshOutAllItem(self):

@@ -165,6 +165,7 @@ def getTBIDFromUrl(url):
                     endIdx = i
                     break
             idValue = url[begIdx:endIdx]
+            idValue = str2unicode(idValue)
             break
         begPos += len(idElement)
     return idValue
@@ -205,6 +206,10 @@ class SearchRecord(object):
 
     def getSummaryNode(self):
         return self.summaryNode
+    
+    def getSummaryID(self):
+        url = self.summaryNode.getAttribute(u"href")
+        return getTBIDFromUrl(url)
         
     def getSummaryStr(self):
         return self.summaryStr
@@ -215,6 +220,7 @@ class BaobeiSearher(object):
     def __init__(self, searchKey, targetUrl):
         self.searchKey = searchKey
         self.targetUrl = targetUrl
+        self.targetID = getTBIDFromUrl(self.targetUrl)
         self.targetTitle = None
         self.targetViewer = None
         self.searchPageIE = None
@@ -378,7 +384,7 @@ class BaobeiSearher(object):
             node = nodesItem[i]
             try:
                 rcd = SearchRecord(node)
-                dbgInfo = str2unicode(str(i)) + u":" + rcd.getSummaryStr()
+                dbgInfo = str2unicode(str(i)) + u":" + rcd.getSummaryStr() + rcd.getSummaryID()
                 logging.debug( dbgInfo )
                 if self.isRecordTarget(rcd)==True:
                     self.curPageInnerIdx = i
@@ -391,7 +397,8 @@ class BaobeiSearher(object):
             titleBeg = u"<title>"
             titleEnd = u"-ÌÔ±¦Íø</title>"
             beg = titleBeg+rcd.getSummaryStr()
-            return beg in self.targetTitle
+            if beg in self.targetTitle:
+                return rcd.getSummaryID() == self.targetID
         return False
     
     def refreshOutAllItem(self):
@@ -680,7 +687,7 @@ def tbsearch_2897106():
     tbsearch_2897106_dowork()
     
 if __name__=='__main__':
-    test_getTBIDFromUrl()
-    #tbsearch_2897106()
+    #test_getTBIDFromUrl()
+    tbsearch_2897106()
 ##        print isActive(u"tbsearch")
     #doActiveFile(u"active.txt")

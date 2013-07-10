@@ -16,7 +16,7 @@ NUM_SUB_PAGE_MAX = 4
 TIME_BAOBEI_VIEW_MIN = 280
 TIME_BAOBEI_VIEW_MAX = 400
 
-
+print "Wing IDE and git test"
 ###################################################################################
 class TaobaoBaobeiViewer(object):
     def __init__(self, mainIE):

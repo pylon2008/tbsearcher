@@ -16,7 +16,6 @@ NUM_SUB_PAGE_MAX = 4
 TIME_BAOBEI_VIEW_MIN = 280
 TIME_BAOBEI_VIEW_MAX = 400
 
-print "Wing IDE and git test"
 ###################################################################################
 class TaobaoBaobeiViewer(object):
     def __init__(self, mainIE):
@@ -145,6 +144,42 @@ class TaobaoBaobeiViewer(object):
 
 
 ###################################################################################
+def getTBIDFromUrl(url):
+    allIdName = [u"id=", u"ad_id=", u"cm_id=", u"pm_id="]
+    allNum = [u"0", u"1", u"2", u"3", u"4", u"5", u"6", u"7", u"8", u"9"]
+    idElement = u"id="
+    idCount = url.count(idElement)
+    begPos = 0
+    idValue = None
+    for idIdx in range(idCount):
+        begPos = url.find(idElement, begPos, len(url)-1)
+        idPre = url[begPos-3:begPos]
+        idName = idPre + idElement
+        if idName not in allIdName:
+            idName = idElement
+        if idName == idElement:
+            begIdx = begPos+len(idElement)
+            endIdx = len(url)
+            for i in range(begIdx, endIdx):
+                if url[i] not in allNum:
+                    endIdx = i
+                    break
+            idValue = url[begIdx:endIdx]
+            break
+        begPos += len(idElement)
+    return idValue
+
+def test_getTBIDFromUrl():
+    url0 = u"http://detail.tmall.com/item.htm?id=9556473603&spm=a230r.1.14.3.5RD65G&ad_id=&am_id=&cm_id=140105335569ed55e27b&pm_id="
+    url1 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.52.5RD65G&id=24075560410"
+    url2 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.124.5RD65G&id=18352266988"
+    url3 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.11.5RD65G&id=17351284242&ad_id=&am_id=&cm_id=140105335569ed55e27b&pm_id="
+    url4 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.70.5RD65G&id=19083043608"
+    url5 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.73.5RD65G&id=19083043608"
+    urls = [url0, url1, url2, url3, url4, url5]
+    for url in urls:
+        print getTBIDFromUrl(url)
+
 class SearchRecord(object):
     def __init__(self, node):
         self.rcdNode = node
@@ -643,10 +678,9 @@ class PyResorceRelease(object):
 def tbsearch_2897106():
     releaser = PyResorceRelease()
     tbsearch_2897106_dowork()
-
-
+    
 if __name__=='__main__':
-    tbsearch_2897106()
-##    while True:       
+    test_getTBIDFromUrl()
+    #tbsearch_2897106()
 ##        print isActive(u"tbsearch")
     #doActiveFile(u"active.txt")

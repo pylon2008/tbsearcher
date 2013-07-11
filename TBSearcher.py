@@ -1,7 +1,6 @@
 # coding=GBK
 import logging, datetime, socket, traceback, os
 import xlwt, xlrd
-from win32com.shell import shell, shellcon
 from xpylon.xethernet.IEProxy import *
 from xpylon.xethernet.IEExplorer import *
 from xpylon.xethernet.NetManager import *
@@ -584,15 +583,15 @@ def initLogging():
     logging.debug("===============================================Begin Log===============================================")
     logging.debug( socket.gethostname() )
 
-    # define a Handler which writes INFO messages or higher to the sys.stderr
-    console = logging.StreamHandler();
-    console.setLevel(logging.DEBUG);    
-    # set a format which is simpler for console use
-    #formatter = logging.Formatter('LINE %(lineno)-4d : %(levelname)-8s %(message)s')
-    formatter = logging.Formatter('%(message)s')
-    # tell the handler to use this format
-    console.setFormatter(formatter);
-    logging.getLogger('').addHandler(console); 
+##    # define a Handler which writes INFO messages or higher to the sys.stderr
+##    console = logging.StreamHandler();
+##    console.setLevel(logging.DEBUG);    
+##    # set a format which is simpler for console use
+##    #formatter = logging.Formatter('LINE %(lineno)-4d : %(levelname)-8s %(message)s')
+##    formatter = logging.Formatter('%(message)s')
+##    # tell the handler to use this format
+##    console.setFormatter(formatter);
+##    logging.getLogger('').addHandler(console); 
  
 def search_baobei():
     searcher = TaobaoSearcher()

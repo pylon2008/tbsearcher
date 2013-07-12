@@ -686,7 +686,8 @@ def tbsearch_2897106():
     tbsearch_2897106_dowork()
     
 if __name__=='__main__':
+    #test_clearDuplicateSpace()
     #test_getTBIDFromUrl()
-    #tbsearch_2897106()
+    tbsearch_2897106()
 ##        print isActive(u"tbsearch")
     #doActiveFile(u"active.txt")

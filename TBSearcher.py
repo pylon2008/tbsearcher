@@ -632,7 +632,11 @@ def tbsearch_2897106_dowork():
 
         #init ev
         try:
-            os.startfile("C:\\Program Files\\Internet Explorer\\iexplore.exe")
+            iexplorePath = "C:\\Program Files\\Internet Explorer\\iexplore.exe"
+            os.startfile(iexplorePath)
+            time.sleep(2)
+            #ieResult = os.popen(iexplorePath).read()
+            #print "ieResult: ", eResult
         except:
             logging.error("¿Õ°×Ò³´ò¿ªÒì³£")
             traceStr = traceback.format_exc()

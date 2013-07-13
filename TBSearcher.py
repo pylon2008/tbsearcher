@@ -15,6 +15,45 @@ NUM_SUB_PAGE_MAX = 4
 TIME_BAOBEI_VIEW_MIN = 280
 TIME_BAOBEI_VIEW_MAX = 400
 
+
+###################################################################################
+def getTBIDFromUrl(url):
+    allIdName = [u"id=", u"ad_id=", u"cm_id=", u"pm_id="]
+    allNum = [u"0", u"1", u"2", u"3", u"4", u"5", u"6", u"7", u"8", u"9"]
+    idElement = u"id="
+    idCount = url.count(idElement)
+    begPos = 0
+    idValue = None
+    for idIdx in range(idCount):
+        begPos = url.find(idElement, begPos, len(url)-1)
+        idPre = url[begPos-3:begPos]
+        idName = idPre + idElement
+        if idName not in allIdName:
+            idName = idElement
+        if idName == idElement:
+            begIdx = begPos+len(idElement)
+            endIdx = len(url)
+            for i in range(begIdx, endIdx):
+                if url[i] not in allNum:
+                    endIdx = i
+                    break
+            idValue = url[begIdx:endIdx]
+            idValue = str2unicode(idValue)
+            break
+        begPos += len(idElement)
+    return idValue
+
+def test_getTBIDFromUrl():
+    url0 = u"http://detail.tmall.com/item.htm?id=9556473603&spm=a230r.1.14.3.5RD65G&ad_id=&am_id=&cm_id=140105335569ed55e27b&pm_id="
+    url1 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.52.5RD65G&id=24075560410"
+    url2 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.124.5RD65G&id=18352266988"
+    url3 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.11.5RD65G&id=17351284242&ad_id=&am_id=&cm_id=140105335569ed55e27b&pm_id="
+    url4 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.70.5RD65G&id=19083043608"
+    url5 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.73.5RD65G&id=19083043608"
+    urls = [url0, url1, url2, url3, url4, url5]
+    for url in urls:
+        print getTBIDFromUrl(url)
+
 ###################################################################################
 class TaobaoBaobeiViewer(object):
     def __init__(self, mainIE):
@@ -54,6 +93,29 @@ class TaobaoBaobeiViewer(object):
                     if type(href)==unicode and href!=u"":
                         if u"detail" in href:
                             self.imgHrefNodes.append(nodeParent)
+        self.clearSelf()
+                            
+    def clearSelf(self):
+        #self.printImgHrefNodes()
+        selfID = getTBIDFromUrl( self.mainIE.locationURL() )
+        removeIDs = []
+        for i in range(len(self.imgHrefNodes)):
+            node = self.imgHrefNodes[i]
+            href = node.getAttribute("href")
+            nodeID = getTBIDFromUrl(href)
+            if nodeID == selfID:
+                removeIDs.append(i)
+                
+        for i in range(len(removeIDs)-1,-1,-1):
+            node = self.imgHrefNodes[removeIDs[i]]
+            self.imgHrefNodes.remove(node)
+        #self.printImgHrefNodes()
+            
+    def printImgHrefNodes(self):
+        print "imgHrefNodes len: ", len(self.imgHrefNodes)
+        for node in self.imgHrefNodes:
+            href = node.getAttribute("href")
+            print href
 
     def getNumSubIE(self):
         return len(self.subNodes)
@@ -142,44 +204,17 @@ class TaobaoBaobeiViewer(object):
                 time.sleep(2)           
 
 
+def test_TaobaoBaobeiViewer():
+    url = u"http://detail.tmall.com/item.htm?id=20440371673&spm=a230r.1.14.1.0YUkKR&ad_id=&am_id=&cm_id=140105335569ed55e27b&pm_id="
+    baobeiIE = IEExplorer()
+    baobeiIE.openURL(url)
+    baobeiIE.setVisible(1)
+    targetViewer = TaobaoBaobeiViewer(baobeiIE)
+    targetViewer.baobeiSrcollBeg()
+    targetViewer.openCurBaobei()
+
+
 ###################################################################################
-def getTBIDFromUrl(url):
-    allIdName = [u"id=", u"ad_id=", u"cm_id=", u"pm_id="]
-    allNum = [u"0", u"1", u"2", u"3", u"4", u"5", u"6", u"7", u"8", u"9"]
-    idElement = u"id="
-    idCount = url.count(idElement)
-    begPos = 0
-    idValue = None
-    for idIdx in range(idCount):
-        begPos = url.find(idElement, begPos, len(url)-1)
-        idPre = url[begPos-3:begPos]
-        idName = idPre + idElement
-        if idName not in allIdName:
-            idName = idElement
-        if idName == idElement:
-            begIdx = begPos+len(idElement)
-            endIdx = len(url)
-            for i in range(begIdx, endIdx):
-                if url[i] not in allNum:
-                    endIdx = i
-                    break
-            idValue = url[begIdx:endIdx]
-            idValue = str2unicode(idValue)
-            break
-        begPos += len(idElement)
-    return idValue
-
-def test_getTBIDFromUrl():
-    url0 = u"http://detail.tmall.com/item.htm?id=9556473603&spm=a230r.1.14.3.5RD65G&ad_id=&am_id=&cm_id=140105335569ed55e27b&pm_id="
-    url1 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.52.5RD65G&id=24075560410"
-    url2 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.124.5RD65G&id=18352266988"
-    url3 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.11.5RD65G&id=17351284242&ad_id=&am_id=&cm_id=140105335569ed55e27b&pm_id="
-    url4 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.70.5RD65G&id=19083043608"
-    url5 = u"http://item.taobao.com/item.htm?spm=a230r.1.14.73.5RD65G&id=19083043608"
-    urls = [url0, url1, url2, url3, url4, url5]
-    for url in urls:
-        print getTBIDFromUrl(url)
-
 class SearchRecord(object):
     def __init__(self, node):
         self.rcdNode = node
@@ -224,6 +259,7 @@ class BaobeiSearher(object):
         self.targetViewer = None
         self.searchPageIE = None
         self.curPageIdx = 0
+        self.totalPageCount = 0
         self.curPageInnerIdx = -1
         self.allSearchPages = []
         self.randomBaobei = []
@@ -254,8 +290,25 @@ class BaobeiSearher(object):
             self.searchPageIE.stop()
             time.sleep(0.1)
 
+        self.curPageIdx, self.totalPageCount = self.getPageInfo()
         #find the target
         self.doFindTargetBaobei()
+        
+    def getPageInfo(self):
+        body = self.searchPageIE.getBody()
+        nodesSpan = getSubNodesByTag(body, u"span")
+        nodesPageinfo = []
+        for node in nodesSpan:
+            if node.className == u"page-info":
+                nodesPageinfo.append(node)
+        if len(nodesPageinfo) != 1:
+            raise ValueError, u"The page info element count error: {0}".format(len(nodesPageinfo))
+        nodePage = nodesPageinfo[0]
+        pageStr = nodePage.getAdjacentText("afterBegin")
+        infos = pageStr.split(u"/")
+        index = (int)(infos[0]) - 1
+        total = (int)(infos[1])
+        return index,total
         
     def doFindTargetBaobei(self):
         # page next loop
@@ -401,7 +454,35 @@ class BaobeiSearher(object):
         return False
     
     def refreshOutAllItem(self):
-        self.searchPageIE.stayInSubPage(10)
+        #self.searchPageIE.stayInSubPage(10)
+        
+        for i in range(3):
+            scrollDelta = [20,30,40,50,60,70]
+            for delta in scrollDelta:
+                self.searchPageIE.getWindow().scrollBy(0,delta)
+            time.sleep(IE_INTERVAL_TIME_SACROLL)
+            for delta in scrollDelta:
+                self.searchPageIE.getWindow().scrollBy(0,delta)
+            time.sleep(IE_INTERVAL_TIME_SACROLL)
+            for delta in scrollDelta:
+                self.searchPageIE.getWindow().scrollBy(0,delta)
+            time.sleep(IE_INTERVAL_TIME_SACROLL)
+            
+            while self.searchPageIE.waitBusy(10)==True:
+                self.searchPageIE.stop()
+                time.sleep(0.1)
+                
+            nextPageNode = self.getNextPageNode()
+            if self.curPageIdx == self.totalPageCount-1:
+                if nextPageNode == None:
+                    break
+            else:
+                if nextPageNode == None:
+                    self.searchPageIE.getWindow().refresh()
+                    time.sleep(2)
+                else:
+                    break
+
 
     def getNextPageNode(self):
         body = self.searchPageIE.getBody()
@@ -411,11 +492,16 @@ class BaobeiSearher(object):
             if node.className==u"page-next" and \
                node.getAttribute(u"title")==u"ÏÂÒ»Ò³":
                 nodesNextPage.append(node)
-        if len(nodesNextPage) != 1:
+        num = len(nodesNextPage)
+        if num == 1:
+            return nodesNextPage[0]
+        elif num == 0:
+            return None
+        else:
             strDbg = u"num of next page button: " + str( len(nodesNextPage) )
             logging.error(strDbg)
             raise ValueError, strDbg
-        return nodesNextPage[0]
+        
         
     def getTargetUrlInfo(self):
         content = urllib.urlopen(self.targetUrl).read()
@@ -693,5 +779,6 @@ if __name__=='__main__':
     #test_clearDuplicateSpace()
     #test_getTBIDFromUrl()
     tbsearch_2897106()
+    #test_TaobaoBaobeiViewer()
 ##        print isActive(u"tbsearch")
     #doActiveFile(u"active.txt")

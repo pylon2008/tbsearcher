@@ -91,7 +91,7 @@ class TaobaoBaobeiViewer(object):
                 if nodeParent.tagName==u"a" or nodeParent.tagName==u"A":
                     href = nodeParent.getAttribute("href")
                     if type(href)==unicode and href!=u"":
-                        if u"detail" in href:
+                        if u"detail" in href or u"item" in href:
                             self.imgHrefNodes.append(nodeParent)
         self.clearSelf()
                             
@@ -283,18 +283,30 @@ class BaobeiSearher(object):
 
         #search
         nodeSearchButton = self.getSearchButtonNode()
-        nodeSearchButton.click()
         nodeSearchButton.focus()
+        nodeSearchButton.click()
+        time.sleep(3)
         self.getTargetUrlInfo()
         while self.searchPageIE.waitBusy(IE_TIME_OUT_NEW_PAGE)==True:
+            if self.searchPageIE.locationURL == url:
+                time.sleep(3)
             self.searchPageIE.stop()
             time.sleep(0.1)
 
         self.curPageIdx, self.totalPageCount = self.getPageInfo()
+        dbgInfo = u"Total page num: {0}".format(self.totalPageCount)
+        logging.debug(dbgInfo)
         #find the target
         self.doFindTargetBaobei()
         
     def getPageInfo(self):
+        scrollDelta = [20,30,40,50,60,70]
+        for delta in scrollDelta:
+            self.searchPageIE.getWindow().scrollBy(0,delta)
+        while self.searchPageIE.waitBusy(10)==True:
+            self.searchPageIE.stop()
+            time.sleep(0.1)
+        
         body = self.searchPageIE.getBody()
         nodesSpan = getSubNodesByTag(body, u"span")
         nodesPageinfo = []
@@ -302,7 +314,8 @@ class BaobeiSearher(object):
             if node.className == u"page-info":
                 nodesPageinfo.append(node)
         if len(nodesPageinfo) != 1:
-            raise ValueError, u"The page info element count error: {0}".format(len(nodesPageinfo))
+            return 0,1
+            #raise ValueError, u"The page info element count error: {0}".format(len(nodesPageinfo))
         nodePage = nodesPageinfo[0]
         pageStr = nodePage.getAdjacentText("afterBegin")
         infos = pageStr.split(u"/")
@@ -321,8 +334,8 @@ class BaobeiSearher(object):
                 self.curPageIdx += 1
                 nextPageNode = self.getNextPageNode()
                 self.searchPageIE.scrollToNode(nextPageNode)
-                nextPageNode.click()
                 nextPageNode.focus()
+                nextPageNode.click()
 
         dbgInfo = u"randomBaobei: " + str2unicode( str(self.randomBaobei) )
         logging.debug(dbgInfo)
@@ -556,6 +569,7 @@ class TaobaoSearcher(object):
     def getRandomSearchKey(self):
         baobei = self.baobeiSet[self.baobeiIndex]
         keystr = baobei[1]
+        keystr = clearDuplicateSpace(keystr)
         keystr = str2unicode(keystr)
         keys = keystr.split(u" ")
         numKey = len(keys)

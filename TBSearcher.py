@@ -1,4 +1,4 @@
-# coding=GBK
+#coding=GBK
 import logging, datetime, socket, traceback, os
 import xlwt, xlrd
 from xpylon.xethernet.IEProxy import *
@@ -300,7 +300,7 @@ class BaobeiSearher(object):
         self.doFindTargetBaobei()
         
     def getPageInfo(self):
-        scrollDelta = [20,30,40,50,60,70]
+        scrollDelta = getScrollDelta()
         for delta in scrollDelta:
             self.searchPageIE.getWindow().scrollBy(0,delta)
         while self.searchPageIE.waitBusy(10)==True:
@@ -470,16 +470,16 @@ class BaobeiSearher(object):
         #self.searchPageIE.stayInSubPage(10)
         
         for i in range(3):
-            scrollDelta = [20,30,40,50,60,70]
+            scrollDelta = getScrollDelta()
             for delta in scrollDelta:
                 self.searchPageIE.getWindow().scrollBy(0,delta)
             time.sleep(IE_INTERVAL_TIME_SACROLL)
-            for delta in scrollDelta:
-                self.searchPageIE.getWindow().scrollBy(0,delta)
-            time.sleep(IE_INTERVAL_TIME_SACROLL)
-            for delta in scrollDelta:
-                self.searchPageIE.getWindow().scrollBy(0,delta)
-            time.sleep(IE_INTERVAL_TIME_SACROLL)
+            #for delta in scrollDelta:
+                #self.searchPageIE.getWindow().scrollBy(0,delta)
+            #time.sleep(IE_INTERVAL_TIME_SACROLL)
+            #for delta in scrollDelta:
+                #self.searchPageIE.getWindow().scrollBy(0,delta)
+            #time.sleep(IE_INTERVAL_TIME_SACROLL)
             
             while self.searchPageIE.waitBusy(10)==True:
                 self.searchPageIE.stop()
@@ -714,7 +714,9 @@ def tbsearch_2897106_dowork():
         ethernet = config.getKeyValue(u"网络连接名称")
         user = config.getKeyValue(u"用户名")
         password = config.getKeyValue(u"密码")
+        dialTimeBefore = config.getKeyValue(u"网络停顿时间")
         netManger.setEthernetInfo(netType, ethernet, user, password)
+        netManger.setDialTimeBefore(dialTimeBefore)
     except:
         logging.error("初始化失败，请检查配置文件：Config.ini")
         traceStr = traceback.format_exc()

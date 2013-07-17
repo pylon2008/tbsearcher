@@ -491,8 +491,8 @@ class BaobeiSearher(object):
                     break
             else:
                 if nextPageNode == None:
-                    self.searchPageIE.getWindow().refresh()
-                    time.sleep(2)
+                    self.searchPageIE.getIE().Refresh()
+                    time.sleep(4)
                 else:
                     break
 
@@ -791,7 +791,18 @@ def tbsearch_2897106():
     releaser = PyResorceRelease()
     tbsearch_2897106_dowork()
     
+def test_refresh():
+    url = u"www.taobao.com"
+    baobeiIE = IEExplorer()
+    baobeiIE.openURL(url)
+    baobeiIE.setVisible(1) 
+    print "before sleep"
+    time.sleep(20)
+    print "after sleep"
+    baobeiIE.getIE().Refresh()
+
 if __name__=='__main__':
+    #test_refresh()
     #test_clearDuplicateSpace()
     #test_getTBIDFromUrl()
     tbsearch_2897106()

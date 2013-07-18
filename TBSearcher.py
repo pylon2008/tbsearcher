@@ -336,6 +336,7 @@ class BaobeiSearher(object):
                 self.searchPageIE.scrollToNode(nextPageNode)
                 nextPageNode.focus()
                 nextPageNode.click()
+                time.sleep(4)
 
         dbgInfo = u"randomBaobei: " + str2unicode( str(self.randomBaobei) )
         logging.debug(dbgInfo)
@@ -438,7 +439,7 @@ class BaobeiSearher(object):
         body = self.searchPageIE.getBody()
         nodesDiv = getSubNodesByTag(body, u"div")
         for node in nodesDiv:
-            if node.className == u"item-box" and node.childNodes.length>=6:
+            if node.className == u"item-box" and node.childNodes.length>=5:
                 nodesItem.append(node)
         strDbgInfo = u"cur page item count: " + str(len(nodesItem))
         logging.debug(strDbgInfo)
@@ -571,7 +572,7 @@ class TaobaoSearcher(object):
         keystr = baobei[1]
         keystr = clearDuplicateSpace(keystr)
         keystr = str2unicode(keystr)
-        keys = keystr.split(u" ")
+        keys = keystr.split(u",")
         numKey = len(keys)
         keyIdx = random.randint(0, numKey-1)
         return keys[keyIdx]

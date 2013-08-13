@@ -4,6 +4,7 @@ from win32com.shell import shell, shellcon
 from xpylon.xethernet.IEProxy import *
 from xpylon.xethernet.IEExplorer import *
 from xpylon.xethernet.NetManager import *
+from xpylon.xutil.Activation import *
 
 def initLogging():
     LOG_FILENAME="TBSearcher.log"
@@ -99,4 +100,5 @@ def tbsearch_2897106():
 
 
 if __name__=='__main__':
-    tbsearch_2897106()
+    #tbsearch_2897106()
+    print isActive(u"tbsearch")

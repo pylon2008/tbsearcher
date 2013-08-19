@@ -317,10 +317,34 @@ class BaobeiSearher(object):
             return 0,1
             #raise ValueError, u"The page info element count error: {0}".format(len(nodesPageinfo))
         nodePage = nodesPageinfo[0]
-        pageStr = nodePage.getAdjacentText("afterBegin")
+        
+        allTextPos = []
+        allTextPos.append(u"beforeBegin")
+        allTextPos.append(u"afterBegin")
+        allTextPos.append(u"beforeEnd")
+        allTextPos.append(u"afterEnd")
+        pageStr = u""
+        for text in allTextPos:
+            pageStr = nodePage.getAdjacentText(text)
+            if u"/" in pageStr:
+                break
+        dbgInfo = u"pageStr: " + str2unicode(pageStr)
+        logging.debug(dbgInfo)
         infos = pageStr.split(u"/")
-        index = (int)(infos[0]) - 1
+        #index = (int)(infos[0]) - 1
         total = (int)(infos[1])
+        
+        nodesStrong = getSubNodesByTag(nodePage, u"strong")
+        if len(nodesStrong) != 1:
+            index = 0
+        else:
+            nodePageIndex = nodesStrong[0]
+            for text in allTextPos:
+                pageStr = nodePageIndex.getAdjacentText(text)
+                if len(pageStr) != 0:
+                    break
+            index = (int)(pageStr) - 1
+        
         return index,total
         
     def doFindTargetBaobei(self):

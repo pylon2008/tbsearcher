@@ -2,3 +2,4 @@
 @@@R5PMI9ZTKJZHEUZ@@@Windows-7-6.1.7601-SP1@@@00:1C:BF:70:2B:CB@@@Genuine Intel(R) CPU T2080 @ 1.73GHz@@@===>2014-08-04 21:40:15
 @@@R5PMI9ZTKJZHEUZ@@@Windows-7-6.1.7601-SP1@@@00:1C:BF:70:2B:CB@@@Genuine Intel(R) CPU           T2080  @ 1.73GHz@@@===>2014-08-04 21:40:15
 @@@U7XLMQU93369852@@@Windows-7-6.1.7601-SP1@@@8C:89:A5:97:C0:9B@@@Intel(R) Pentium(R) CPU G620 @ 2.60GHz@@@===>2014-08-04 21:40:15
+@@@PC-0626095308@@@Windows-7-6.1.7601-SP1@@@BC:5F:F4:7F:77:D5@@@Intel(R) Pentium(R) CPU G860 @ 3.00GHz@@@===>2014-08-04 21:40:15
